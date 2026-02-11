@@ -1,0 +1,8 @@
+autobahn[twisted]
+twisted
+google-genai
+alpha_mini_rug
+msgpack
+numpy
+matplotlib
+SpeechRecognition

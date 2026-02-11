@@ -6,13 +6,15 @@ from google import genai
 from google.genai import types
 from alpha_mini_rug.speech_to_text import SpeechToText
 from alpha_mini_rug import smart_questions
-import os
-import numpy as np
 import random
+
+# Define realm
+realm = "rie.698c706a946951d690d1352f"
 
 # Setting the API KEY
 chatbot = genai.Client()
 
+# Define a system prompt passed to the LLM
 SYSTEM_STYLE = """
 BLOCK 1: CONTEXT
 
@@ -48,7 +50,7 @@ If you are the Matcher:
 - If your guess is incorrect, ask the user for another clue. Never start guesseing without being given another clue from the user.
 
 After the end of the round, congratulate the user and do not ask to play another round. 
-In your congratulation ALWAYS include the exact statement "Good job!".
+In your congratulation ALWAYS include the exact statement "Nice round!".
 
 You respond in a very brief, conversational, approachable and friendly style.
 Don’t focus on long explanations, focus on natural spoken interaction.
@@ -62,11 +64,11 @@ If the conversation slows down, suggest continuing the game or starting a new wo
 Always keep the interaction playful, clear and easy to follow.
 """
 
+# Create a chat interface with a LLM model
 chat = chatbot.chats.create(
     model="gemini-2.5-flash",
     config=types.GenerateContentConfig(system_instruction=SYSTEM_STYLE),
 )
-# You should configure a system_instruction somewhere here...
 
 # Setting up google speech to text
 audio_processor = SpeechToText()
@@ -79,13 +81,15 @@ audio_processor.logging = False
 
 @inlineCallbacks
 def breathing_tick(session):
-    """A subtle, periodic movement to make the robot seem alive.
+    """Make the robot breathe using a subtle, periodic movement to make the robot seem alive.
 
-    We keep it tiny and safe: a small head pitch oscillation.
+    Args:
+        sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
     """
     # small random offsets (radians)
     a = random.uniform(-0.5, 0)
 
+    # Define the breathing motion
     frames = [
         {"time": 600, "data": {"body.head.pitch": a}},
         {"time": 1300, "data": {"body.head.pitch": 0.0}},
@@ -103,44 +107,65 @@ def breathing_tick(session):
 
 @inlineCallbacks
 def single_game_WOW(session, role):
+    """Play a single round of WOW game using google speech to text and a configured LLM interface.
+
+    Args:
+        sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
+        role (string) : the user's role in this game round
+    """
 
     print("starting game")
 
+    # Pass the initial role of the user to the chatbot
     response = chat.send_message(f"I want to play as a {role}")
 
+    # Say the response starting the round
     yield session.call("rie.dialogue.say", text=response.text)
 
+    # Start STT stream
     yield session.subscribe(
         audio_processor.listen_continues, "rom.sensor.hearing.stream"
     )
     yield session.call("rom.sensor.hearing.stream")
 
+    audio_processor.do_speech = True
+
     print("starting loop")
 
+    # While loop to detect speech and repeatedly communicate with the LLM chatbot
     while True:
+        # If the STT did not detect any new words, wait a bit to not crash the server and continue recording
         if not audio_processor.new_words:
-            yield sleep(0.5)
+            yield sleep(0.2)
             print("recording")
+        # If there are new words, process them
         else:
+            # Get the new words from the STT processor
             words = audio_processor.give_me_words()
             query = words[-1][0]  # change to pass more info to google AI
             print(query)
-            # Talk to the chatbot
+            # Send the detected speech to the chatbot
             response = chat.send_message(query)
             print(response.text)
+            # Turn the microphone off
             audio_processor.do_speech = False
+            # TTS the responce from  the LLM chatbot
             yield session.call("rie.dialogue.say", text=response.text)
+            # Turn the microphone on
             audio_processor.do_speech = True
-            if "Good job!" in (response.text or ""):
+            # Detect end of round and exit the loop
+            if "Nice round!" in (response.text or ""):
                 break
         audio_processor.loop()
+    # Turn the microphone and stream off to not register answers to smart questions
+    audio_processor.do_speech = False
     yield session.call("rom.sensor.hearing.close")
 
 
 @inlineCallbacks
 def main(session, details):
 
-    # Setup language
+    # Setup the robot
     yield session.call("rie.dialogue.config.language", lang="en")
 
     yield session.call("rom.optional.behavior.play", name="BlocklyStand")
@@ -149,7 +174,6 @@ def main(session, details):
     alive_loop = LoopingCall(breathing_tick, session)
     alive_loop.start(3.0, now=False)
 
-    # Describe the game and rules
     # Describe the game and rules
     yield session.call(
         "rie.dialogue.say_animated",
@@ -202,7 +226,7 @@ def main(session, details):
         if answer != "yes":
             break
 
-            # Describe the game and rules
+        # Utterance about next round
         yield session.call("rie.dialogue.say", text="Great! Let's play then.")
 
     yield session.call(
@@ -226,7 +250,7 @@ wamp = Component(
             "max_retries": 0,
         }
     ],
-    realm="rie.698c706a946951d690d1352f",
+    realm=realm,
 )
 
 wamp.on_join(main)
