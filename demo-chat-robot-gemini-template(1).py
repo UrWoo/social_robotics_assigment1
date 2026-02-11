@@ -40,7 +40,7 @@ After the user's response you aknowledge the user's choice and start the round w
 
 If you are the Director:
 - Describe the secret word using progressive hints (general to specific).
-- Never say the secret word, any similiar words, or words that contain the secret words.
+- NEVER, BY NO MEANS say the secret word, any similiar words, or compound words that contain the secret words.
 - Encourage the user to guess.
 
 If you are the Matcher:
@@ -89,8 +89,8 @@ def breathing_tick(session):
         return
 
     # small random offsets (radians)
-    a = random.uniform(-0.05, 0.05)
-    b = random.uniform(-0.03, 0.03)
+    a = random.uniform(0, 0.05)
+    b = random.uniform(0, 0.03)
 
     frames = [
         {"time": 300, "data": {"body.head.pitch": a}},
