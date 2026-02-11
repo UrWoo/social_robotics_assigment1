@@ -1,5 +1,6 @@
 from autobahn.twisted.component import Component, run
 from twisted.internet.defer import inlineCallbacks
+from twisted.internet.task import LoopingCall
 from autobahn.twisted.util import sleep
 from google import genai
 from google.genai import types
@@ -7,6 +8,7 @@ from alpha_mini_rug.speech_to_text import SpeechToText
 from alpha_mini_rug import smart_questions
 import os
 import numpy as np
+import random
 
 # Setting the API KEY
 chatbot = genai.Client()
@@ -76,6 +78,36 @@ audio_processor.logging = False
 
 
 @inlineCallbacks
+def breathing_tick(session):
+    """A subtle, periodic movement to make the robot seem alive.
+
+    We keep it tiny and safe: a small head pitch oscillation.
+    We also avoid moving while the robot is speaking.
+    """
+    global robot_speaking
+    if robot_speaking:
+        return
+
+    # small random offsets (radians)
+    a = random.uniform(-0.05, 0.05)
+    b = random.uniform(-0.03, 0.03)
+
+    frames = [
+        {"time": 300, "data": {"body.head.pitch": a}},
+        {"time": 600, "data": {"body.head.pitch": b}},
+        {"time": 900, "data": {"body.head.pitch": 0.0}},
+    ]
+
+    # Fire-and-forget (sync=False) so it doesn't block dialogue.
+    yield session.call(
+            "rom.actuator.motor.write",
+            frames=frames,
+            mode="linear",
+            sync=False,
+            force=True,
+    )
+
+@inlineCallbacks
 def single_game_WOW(session, role):
 
     print("starting game")
@@ -118,6 +150,10 @@ def main(session, details):
     yield session.call("rie.dialogue.config.language", lang="en")
 
     yield session.call("rom.optional.behavior.play", name="BlocklyStand")
+
+    # Start alive movement loop (every ~3 seconds)
+    alive_loop = LoopingCall(breathing_tick, session)
+    alive_loop.start(3.0, now=False)
 
     # Describe the game and rules
     # Describe the game and rules
@@ -196,7 +232,7 @@ wamp = Component(
             "max_retries": 0,
         }
     ],
-    realm="rie.698b2514946951d690d12eb3",
+    realm="rie.698c706a946951d690d1352f",
 )
 
 wamp.on_join(main)
