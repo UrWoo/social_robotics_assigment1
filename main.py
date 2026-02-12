@@ -12,7 +12,7 @@ import random
 realm = "rie.698d8f61946951d690d13aef"
 
 # Setting the API KEY
-chatbot = genai.Client()
+chatbot = genai.Client(api_key="AIzaSyCHrjhm32nTd_o5Z5QoF532Irk3yiQpC6s")
 
 # Define a system prompt passed to the LLM
 SYSTEM_STYLE = """
@@ -177,6 +177,8 @@ def single_game_WOW(session, role):
 
     audio_processor.do_speech = True
 
+    print(audio_processor.do_speech, audio_processor.new_words)
+
     print("starting loop")
 
     # While loop to detect speech and repeatedly communicate with the LLM chatbot
@@ -187,6 +189,7 @@ def single_game_WOW(session, role):
             print("recording")
         # If there are new words, process them
         else:
+            print("processing words")
             # Get the new words from the STT processor
             words = audio_processor.give_me_words()
             query = words[-1][0]  # change to pass more info to google AI
@@ -266,14 +269,14 @@ def main(session, details):
         # Ask to play next round
         possible_choices = {
             "yes": ["yes", "yea", "sure", "absolutely", "okay"],
-            "no": ["no", "never", "nah"],
+            "no": ["no"],
         }
         answer = yield smart_questions(
             session,
             question="That was fun. Do you want to play another round?",
             answer_dictionary=possible_choices,
         )
-        if answer != "yes":
+        if answer == "no":
             break
 
         # Utterance about next round
