@@ -86,24 +86,28 @@ def breathe(session):
     Args:
         sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
     """
-    # small random offsets (radians)
-    a = random.uniform(-0.5, 0)
+    try:
+        # small random offsets (radians)
+        a = random.uniform(-0.1, -0.04)
 
-    # Define the breathing motion
-    frames = [
-        {"time": 600, "data": {"body.head.pitch": a}},
-        {"time": 1300, "data": {"body.head.pitch": 0.0}},
-    ]
+        # Define the breathing motion
+        frames = [
+            {"time": 600, "data": {"body.head.pitch": a}},
+            {"time": 1600, "data": {"body.head.pitch": 0.01}},
+        ]
 
-    # Fire-and-forget (sync=False) so it doesn't block dialogue.
-    # Used perform_movement to not damage the robot
-    yield perform_movement(
-        session=session,
-        frames=frames,
-        mode="linear",
-        sync=False,
-        force=True,
-    )
+        # Fire-and-forget (sync=False) so it doesn't block dialogue.
+        # Used perform_movement to not damage the robot
+        yield perform_movement(
+            session=session,
+            frames=frames,
+            mode="linear",
+            sync=False,
+            force=True,
+        )
+    except Exception as e:
+        print(f"error breathing is :{e}")
+
 
 @inlineCallbacks
 def arm_movement(session):
@@ -113,25 +117,29 @@ def arm_movement(session):
         sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
     """
     # small random offsets (radians)
-    a = random.uniform(-1, 0)
+    try:
+        a = random.uniform(-1, -0.2)
 
-    # Define the breathing motion
-    frames = [
-        {"time": 600, "data": {"body.arms.left.lower.roll": a}},
-        {"time": 600, "data": {"body.arms.right.lower.roll": a}},
-        {"time": 1300, "data": {"body.arms.left.lower.roll": 0.0}},
-        {"time": 1300, "data": {"body.arms.right.lower.roll": 0.0}}
-    ]
+        # Define the breathing motion
+        frames = [
+            {"time": 700, "data": {"body.arms.left.lower.roll": a}},
+            {"time": 750, "data": {"body.arms.right.lower.roll": a}},
+            {"time": 1400, "data": {"body.arms.left.lower.roll": -0.01}},
+            {"time": 1450, "data": {"body.arms.right.lower.roll": -0.01}},
+        ]
 
-    # Fire-and-forget (sync=False) so it doesn't block dialogue.
-    # Used perform_movement to not damage the robot
-    yield perform_movement(
-        session=session,
-        frames=frames,
-        mode="linear",
-        sync=False,
-        force=True,
-    )
+        # Fire-and-forget (sync=False) so it doesn't block dialogue.
+        # Used perform_movement to not damage the robot
+        yield perform_movement(
+            session=session,
+            frames=frames,
+            mode="linear",
+            sync=False,
+            force=True,
+        )
+    except Exception as e:
+        print(f"error is {e}")
+
 
 @inlineCallbacks
 def single_game_WOW(session, role):
