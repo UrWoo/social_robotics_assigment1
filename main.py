@@ -5,11 +5,11 @@ from autobahn.twisted.util import sleep
 from google import genai
 from google.genai import types
 from alpha_mini_rug.speech_to_text import SpeechToText
-from alpha_mini_rug import smart_questions
+from alpha_mini_rug import perform_movement, smart_questions
 import random
 
 # Define realm
-realm = "rie.698c706a946951d690d1352f"
+realm = "rie.698d8f61946951d690d13aef"
 
 # Setting the API KEY
 chatbot = genai.Client()
@@ -80,8 +80,8 @@ audio_processor.logging = False
 
 
 @inlineCallbacks
-def breathing_tick(session):
-    """Make the robot breathe using a subtle, periodic movement to make the robot seem alive.
+def breathe(session):
+    """Make the robot breathe using a periodic movement to make the robot seem alive.
 
     Args:
         sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
@@ -96,14 +96,42 @@ def breathing_tick(session):
     ]
 
     # Fire-and-forget (sync=False) so it doesn't block dialogue.
-    yield session.call(
-        "rom.actuator.motor.write",
+    # Used perform_movement to not damage the robot
+    yield perform_movement(
+        session=session,
         frames=frames,
         mode="linear",
         sync=False,
         force=True,
     )
 
+@inlineCallbacks
+def arm_movement(session):
+    """Make the robot move its arm using a periodic movement to make the robot seem alive.
+
+    Args:
+        sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
+    """
+    # small random offsets (radians)
+    a = random.uniform(-1, 0)
+
+    # Define the breathing motion
+    frames = [
+        {"time": 600, "data": {"body.arms.left.lower.roll": a}},
+        {"time": 600, "data": {"body.arms.right.lower.roll": a}},
+        {"time": 1300, "data": {"body.arms.left.lower.roll": 0.0}},
+        {"time": 1300, "data": {"body.arms.right.lower.roll": 0.0}}
+    ]
+
+    # Fire-and-forget (sync=False) so it doesn't block dialogue.
+    # Used perform_movement to not damage the robot
+    yield perform_movement(
+        session=session,
+        frames=frames,
+        mode="linear",
+        sync=False,
+        force=True,
+    )
 
 @inlineCallbacks
 def single_game_WOW(session, role):
@@ -170,13 +198,16 @@ def main(session, details):
 
     yield session.call("rom.optional.behavior.play", name="BlocklyStand")
 
-    # Start alive movement loop (every ~3 seconds)
-    alive_loop = LoopingCall(breathing_tick, session)
-    alive_loop.start(3.0, now=False)
+    # Start breathing movement loop (every ~3 seconds)
+    breathing_loop = LoopingCall(breathe, session)
+    breathing_loop.start(3.0, now=False)
+
+    arm_movement_loop = LoopingCall(arm_movement, session)
+    arm_movement_loop.start(2.0, now=False)
 
     # Describe the game and rules
     yield session.call(
-        "rie.dialogue.say_animated",
+        "rie.dialogue.say",
         text="Hello! let's play the with other words game! In this game, there are two roles "
         "the matcher and the director. the matcher has to guess the word that the director describes. "
         "remember that the director is not allowed to use the word that is supposed to be guessed in their descriptions",
