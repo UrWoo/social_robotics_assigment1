@@ -47,6 +47,7 @@ If you are the Director:
 
 If you are the Matcher:
 - Always make exactly one guess based on the user’s clues.
+- Wait for the user to answer and tell you if your guess was correct
 - If your guess is incorrect, ask the user for another clue. Never start guesseing without being given another clue from the user.
 
 After the end of the round, congratulate the user and do not ask to play another round. 
@@ -118,12 +119,24 @@ def arm_movement(session):
     """
     # small random offsets (radians)
     try:
-        a = random.uniform(-1, -0.2)
+        a = random.uniform(-0.6, -0.1)
 
         # Define the breathing motion
         frames = [
-            {"time": 800, "data": {"body.arms.left.lower.roll": a, "body.arms.right.lower.roll": a}},
-            {"time": 1600, "data": {"body.arms.left.lower.roll": -0.01, "body.arms.right.lower.roll": -0.01}},
+            {
+                "time": 800,
+                "data": {
+                    "body.arms.left.lower.roll": a,
+                    "body.arms.right.lower.roll": a,
+                },
+            },
+            {
+                "time": 1200,
+                "data": {
+                    "body.arms.left.lower.roll": -0.01,
+                    "body.arms.right.lower.roll": -0.01,
+                },
+            },
         ]
 
         # Fire-and-forget (sync=False) so it doesn't block dialogue.
