@@ -12,7 +12,7 @@ import random
 realm = "rie.698d8f61946951d690d13aef"
 
 # Setting the API KEY
-chatbot = genai.Client(api_key="AIzaSyCHrjhm32nTd_o5Z5QoF532Irk3yiQpC6s")
+chatbot = genai.Client(api_key="AIzaSyC_ct6k_vtM792FwIC5dpjBIUko52ZT3Yw")
 
 # Define a system prompt passed to the LLM
 SYSTEM_STYLE = """
@@ -70,14 +70,6 @@ chat = chatbot.chats.create(
     model="gemini-2.5-flash",
     config=types.GenerateContentConfig(system_instruction=SYSTEM_STYLE),
 )
-
-# Setting up google speech to text
-audio_processor = SpeechToText()
-
-# Set up parameters for STT
-audio_processor.silence_time = 1
-audio_processor.silence_threshold2 = 200
-audio_processor.logging = False
 
 
 @inlineCallbacks
@@ -163,6 +155,17 @@ def single_game_WOW(session, role):
 
     print("starting game")
 
+    info = yield session.call("rom.sensor.hearing.info")
+    print(info)
+
+    # Setting up google speech to text
+    audio_processor = SpeechToText()
+
+    # Set up parameters for STT
+    audio_processor.silence_time = 1
+    audio_processor.silence_threshold2 = 200
+    audio_processor.logging = False
+
     # Pass the initial role of the user to the chatbot
     response = chat.send_message(f"I want to play as a {role}")
 
@@ -177,7 +180,11 @@ def single_game_WOW(session, role):
 
     audio_processor.do_speech = True
 
-    print(audio_processor.do_speech, audio_processor.new_words)
+    print(
+        audio_processor.do_speech,
+        audio_processor.new_words,
+        audio_processor.processing,
+    )
 
     print("starting loop")
 
@@ -192,7 +199,8 @@ def single_game_WOW(session, role):
             print("processing words")
             # Get the new words from the STT processor
             words = audio_processor.give_me_words()
-            query = words[-1][0]  # change to pass more info to google AI
+            audio_processor.words = []
+            query = words[-1][0]
             print(query)
             # Send the detected speech to the chatbot
             response = chat.send_message(query)
