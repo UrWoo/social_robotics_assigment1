@@ -122,10 +122,8 @@ def arm_movement(session):
 
         # Define the breathing motion
         frames = [
-            {"time": 700, "data": {"body.arms.left.lower.roll": a}},
-            {"time": 750, "data": {"body.arms.right.lower.roll": a}},
-            {"time": 1400, "data": {"body.arms.left.lower.roll": -0.01}},
-            {"time": 1450, "data": {"body.arms.right.lower.roll": -0.01}},
+            {"time": 800, "data": {"body.arms.left.lower.roll": a, "body.arms.right.lower.roll": a}},
+            {"time": 1600, "data": {"body.arms.left.lower.roll": -0.01, "body.arms.right.lower.roll": -0.01}},
         ]
 
         # Fire-and-forget (sync=False) so it doesn't block dialogue.
@@ -134,7 +132,7 @@ def arm_movement(session):
             session=session,
             frames=frames,
             mode="linear",
-            sync=False,
+            sync=True,
             force=True,
         )
     except Exception as e:
