@@ -12,7 +12,7 @@ import random
 realm = "rie.698d8f61946951d690d13aef"
 
 # Setting the API KEY
-chatbot = genai.Client(api_key="AIzaSyC_ct6k_vtM792FwIC5dpjBIUko52ZT3Yw")
+chatbot = genai.Client()
 
 # Define a system prompt passed to the LLM
 SYSTEM_STYLE = """
