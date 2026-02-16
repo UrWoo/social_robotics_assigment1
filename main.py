@@ -9,7 +9,7 @@ from alpha_mini_rug import perform_movement, smart_questions
 import random
 
 # Define realm
-realm = "rie.698d8f61946951d690d13aef"
+realm = "rie.6992f8f0e14c6bd0843c6071"
 
 # Setting the API KEY
 chatbot = genai.Client()
@@ -80,7 +80,7 @@ def breathe(session):
         sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
     """
     try:
-        # small random offsets (radians)
+        # small random offsets from a uniform distribution
         a = random.uniform(-0.1, -0.04)
 
         # Define the breathing motion
@@ -89,8 +89,8 @@ def breathe(session):
             {"time": 1600, "data": {"body.head.pitch": 0.01}},
         ]
 
-        # Fire-and-forget (sync=False) so it doesn't block dialogue.
         # Used perform_movement to not damage the robot
+        # sync=False so it doesn't block dialogue.
         yield perform_movement(
             session=session,
             frames=frames,
@@ -109,11 +109,11 @@ def arm_movement(session):
     Args:
         sessions (ApplicationSession) : active WAMP session to communicate with the robot backend
     """
-    # small random offsets (radians)
+    # small random offsets from a uniform distribution
     try:
         a = random.uniform(-0.6, -0.1)
 
-        # Define the breathing motion
+        # Define the arm motion
         frames = [
             {
                 "time": 800,
@@ -131,13 +131,13 @@ def arm_movement(session):
             },
         ]
 
-        # Fire-and-forget (sync=False) so it doesn't block dialogue.
         # Used perform_movement to not damage the robot
+        # sync=False so it doesn't block dialogue.
         yield perform_movement(
             session=session,
             frames=frames,
             mode="linear",
-            sync=True,
+            sync=False,
             force=True,
         )
     except Exception as e:
@@ -238,8 +238,8 @@ def main(session, details):
     # Describe the game and rules
     yield session.call(
         "rie.dialogue.say",
-        text="Hello! let's play the with other words game! In this game, there are two roles "
-        "the matcher and the director. the matcher has to guess the word that the director describes. "
+        text="Hello! let's play the 'with other words' game! In this game, there are two roles "
+        "the matcher and the director. the matcher has to guess a word that the director describes. "
         "remember that the director is not allowed to use the word that is supposed to be guessed in their descriptions",
     )
 
@@ -287,9 +287,10 @@ def main(session, details):
         if answer == "no":
             break
 
-        # Utterance about next round
+        # Utterance if the player decides to play a new round
         yield session.call("rie.dialogue.say", text="Great! Let's play then.")
 
+    # Utterance if the player decides to end the game
     yield session.call(
         "rie.dialogue.say", text="Alright! It was delightful. Goodbye."
     )
@@ -298,7 +299,6 @@ def main(session, details):
     yield session.call("rom.sensor.hearing.close")
     # and let the robot crouch
     # THIS IS IMPORTANT, as this will turn of the robot's motors and prevent them from overheating
-    # Always and your program with this
     yield session.call("rom.optional.behavior.play", name="BlocklyCrouch")
     session.leave()
 
